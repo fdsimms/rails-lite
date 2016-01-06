@@ -13,7 +13,6 @@ class ControllerBase
     @res = res
     @params = req.params
     @params.merge!(route_params)
-    @session = Session.new(req)
   end
 
   # Helper method to alias @already_built_response
@@ -23,12 +22,15 @@ class ControllerBase
 
   # Set the response status code and header
   def redirect_to(url)
+    flash.reset!
     if already_built_response?
       raise "Response already built!"
     else
       res.header["location"] = url
       res.status = 302
-      @session.store_session(res)
+      session.store_session(res)
+      flash.store_flash(res)
+      flash.reset!
       @already_built_response = res
     end
   end
@@ -42,7 +44,9 @@ class ControllerBase
     else
       res.body = [content]
       res.header['Content-Type'] = content_type
-      @session.store_session(res)
+      session.store_session(res)
+      flash.store_flash(res)
+      flash.reset!
       @already_built_response = res
     end
   end
@@ -61,6 +65,10 @@ class ControllerBase
   # method exposing a `Session` object
   def session
     @session ||= Session.new(req)
+  end
+
+  def flash
+    @flash ||= Flash.new(req)
   end
 
   # use this with the router to call action_name (:index, :show, :create...)
